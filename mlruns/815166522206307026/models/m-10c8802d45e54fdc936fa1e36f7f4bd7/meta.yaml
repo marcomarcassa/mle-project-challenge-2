@@ -1,0 +1,10 @@
+artifact_location: file:///F:/Google%20Drive/Google%20Drive/Projetos/phData/mle-project-challenge-2/mlruns/815166522206307026/models/m-10c8802d45e54fdc936fa1e36f7f4bd7/artifacts
+creation_timestamp: 1757308755857
+experiment_id: '815166522206307026'
+last_updated_timestamp: 1757308759794
+model_id: m-10c8802d45e54fdc936fa1e36f7f4bd7
+model_type: null
+name: model
+source_run_id: 2d0e3ae232844797830e8d0198366f58
+status: 2
+status_message: null

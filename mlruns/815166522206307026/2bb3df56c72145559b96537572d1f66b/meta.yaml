@@ -1,0 +1,14 @@
+artifact_uri: file:///F:/Google%20Drive/Google%20Drive/Projetos/phData/mle-project-challenge-2/mlruns/815166522206307026/2bb3df56c72145559b96537572d1f66b/artifacts
+end_time: 1757306652556
+entry_point_name: ''
+experiment_id: '815166522206307026'
+lifecycle_stage: active
+run_id: 2bb3df56c72145559b96537572d1f66b
+run_name: xgb_run
+source_name: ''
+source_type: 4
+source_version: ''
+start_time: 1757306637045
+status: 3
+tags: []
+user_id: Marco
