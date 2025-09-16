@@ -1,55 +1,10 @@
-![phData Logo](phData.png "phData Logo")
-
-# phData Machine Learning Engineer Candidate Project
-
-phData wants the interview process to – as best as possible – reflect
-the realities of working in the real world. In a typical real-world scenario,
-you would be given project-based work as part of a team and will have time to
-perform research to solve the assigned task. As such, phData interviews
-are based on projects which emulate this workflow.
-
-We also believe that success in a project includes communication of the
-solution to stakeholders.  Once you've completed the project, you will
-deliver present your solution to our team.
-The context of this project mocks a real-world problem involving real estate.
-When you present to us, we would like you to pretend that we real estate
-professionals rather than engineers.  Once you've finished that presentation,
-we will dig deeper into the technical details of the solution.
-
-In other words, your presentation should be split into two parts,
-roughly 15 minutes each:
-- One part which presents the solution the client audience described
-    in the prompt below.  This should be aimed at a non-technical audience,
-    not engineers or scientists.
-- A second part which explains technical aspects of the solution,
-    which is aimed at engineers and/or scientists.
-
-We will schedule at least an hour for this presentation, but you need not
-present for a full hour – we generally ask a lot of questions.
-
-We would like to have the opportunity to review your solution before
-presenting.
-Please add your project to a private GitHub repository and share the
-link with our recruiter.
-If you don’t have a GitHub account, you can create one for
-free at [github.com](https://github.com/).
-
-This project is for the machine learning engineer (MLE) role.
-We recognize there may be many definitions for a machine learning engineer,
-at phData we define this role as follows:
 
 > The MLE works in cooperation with data science teams by providing the
 engineering support for model deployment, monitoring, and retraining.
 The MLE is often not directly involved in the data-discovery and
 model-development process, though it is helpful for MLEs to have proficient
 domain knowledge in this area.
-See
 [this article](https://www.oreilly.com/ideas/data-engineers-vs-data-scientists)
-for more discussion on these various roles.
-
-If you are more interested in another role such as Data Science or Data
-Engineering, please inform your contact you’ve been given the wrong project.
-
 
 ## Project Scenario
 
@@ -172,9 +127,6 @@ met.
     Ask questions and use the internet for research.
     Focus on your core strengths.
 
-## One More Thing
-We wish you all the best as you work on this project and thank you again for
-your interest in phData.
 If you have any suggestions for this project or our interview process, please
 **give us feedback.**
 Our goal is to make the interview process a positive experience for candidates
