@@ -20,11 +20,11 @@ This will build the necessary images and start all the services.
 
 Once the containers are running, you can access the different components of the project at the following local URLs:
 
-* **📊 Interactive Dashboard:** [http://localhost:8501](https://www.google.com/search?q=http://localhost:8501)
+* **📊 Interactive Dashboard:** [http://localhost:8501](http://localhost:8501)
 
-* **🧠 Prediction API Docs:** [http://localhost:8000/docs](https://www.google.com/search?q=http://localhost:8000/docs)
+* **🧠 Prediction API Docs:** [http://localhost:8000/docs](http://localhost:8000/docs)
 
-* **📈 MLflow Tracking UI:** [http://localhost:5000](https://www.google.com/search?q=http://localhost:5000)
+* **📈 MLflow Tracking UI:** [http://localhost:5000](http://localhost:5000)
 
 The inference endpoint is available at `POST http://localhost:8000/predict`.
 """
