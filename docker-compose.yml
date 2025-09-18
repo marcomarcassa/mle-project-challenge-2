@@ -1,0 +1,66 @@
+services:
+  fastapi_service:
+    build:
+      context: .
+      dockerfile: api/Dockerfile
+    ports:
+      - "8000:8000"
+    volumes:
+      - ./data:/code/data
+      - ./model:/code/model
+      - ./mlruns:/code/mlruns
+      - ./processed_data:/code/processed_data
+    environment:
+      - STREAMLIT_HOME=/code/.streamlit
+      - MLFLOW_TRACKING_URI=http://mlflow_server:5000
+    deploy:
+      resources:
+        limits:
+          cpus: '2'
+          memory: 4G
+        reservations:
+          cpus: '1'
+          memory: 2G
+
+  streamlit_service:
+    build:
+      context: .
+      dockerfile: app/Dockerfile
+    ports:
+      - "8501:8501"
+    volumes:
+      - ./data:/code/data
+      - ./model:/code/model
+      - ./mlruns:/code/mlruns
+      - ./processed_data:/code/processed_data
+    environment:
+      - STREAMLIT_HOME=/code/.streamlit
+      - MLFLOW_TRACKING_URI=http://mlflow_server:5000
+    deploy:
+      resources:
+        limits:
+          cpus: '2'
+          memory: 4G
+        reservations:
+          cpus: '1'
+          memory: 2G
+
+  mlflow_server:
+    image: ghcr.io/mlflow/mlflow:v2.11.1
+    ports:
+      - "5000:5000"
+    volumes:
+      - ./mlruns:/mlruns
+    deploy:
+      resources:
+        limits:
+          cpus: '1'
+          memory: 2G
+        reservations:
+          cpus: '0.5'
+          memory: 1G
+    command: >
+      mlflow server
+      --backend-store-uri /mlruns
+      --default-artifact-root /mlruns
+      --host 0.0.0.0

@@ -3,11 +3,8 @@ import pandas as pd
 import os
 
 # --- 1. CONFIGURATION ---
-# The URL where your FastAPI application is running
-API_URL = "http://127.0.0.1:8000/predict"
-# Path to the data file with examples to test
+API_URL = "http://localhost:8000/predict"
 DATA_PATH = os.path.join("data", "future_unseen_examples.csv")
-# Number of examples to test from the file
 N_EXAMPLES = 5
 
 # --- 2. SCRIPT LOGIC ---
@@ -30,14 +27,17 @@ def run_test():
     for index, row in test_data.iterrows():
         # Convert the row to a dictionary, which is a valid JSON format
         payload = row.to_dict()
-
+        headers = {
+            'X-API-Key': 'default_secret_key',
+            'Content-Type': 'application/json'
+        }
         print("\n----------------------------------------")
         print(f"Sending data for house #{index+1}:")
         print(f"  Zipcode: {payload.get('zipcode')}, SqFt Living: {payload.get('sqft_living')}")
 
         try:
-            response = requests.post(API_URL, json=payload)
-            response.raise_for_status()  # Raise an exception for bad status codes (4xx or 5xx)
+            response = requests.post(API_URL, headers=headers, json=payload)
+            response.raise_for_status() 
 
             # --- Display Results ---
             prediction = response.json()
@@ -48,20 +48,10 @@ def run_test():
             print(f"❌ FAILED: Could not connect to the API at {API_URL}.")
             print(f"   Error: {e}")
             print("   Please ensure the FastAPI server is running.")
-            break # Stop the test if the server is down
+            print(response.text if 'response' in locals() else "No response received.")
+            break 
 
     print("\n--- Test Finished ---")
 
 if __name__ == "__main__":
     run_test()
-
-
-### How to Run It
-
-# 1.  Make sure your FastAPI server is **still running** in one terminal (`python -m uvicorn main:app --reload` from the `api` directory).
-# 2.  Open a **new, separate terminal**.
-# 3.  Activate the same Conda environment: `conda activate housing`.
-# 4.  Navigate to the **root directory** of your project (the one that contains the `api/` folder).
-# 5.  Run the test script:
-#     python test_api.py
-    

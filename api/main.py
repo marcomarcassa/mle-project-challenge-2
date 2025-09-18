@@ -1,115 +1,133 @@
 import joblib
 import json
 import pandas as pd
-from fastapi import FastAPI, HTTPException
+import numpy as np
+from fastapi import FastAPI, HTTPException, Security, Depends
+from fastapi.security import APIKeyHeader
 from pydantic import BaseModel, Field
 import os
+from datetime import datetime
+from sklearn.cluster import KMeans
 
-# --- 1. SETUP ---
-# Create a FastAPI app instance
+# 1. SETUP & SECURITY
 app = FastAPI(title="Real Estate Price Prediction API", version="1.0")
 
-# --- 2. LOAD ARTIFACTS ---
-# Define paths to model and data artifacts
-# Adjust these paths if your file structure is different.
+API_KEY = os.getenv("API_KEY", "default_secret_key")
+API_KEY_NAME = "X-API-Key"
+
+api_key_header = APIKeyHeader(name=API_KEY_NAME, auto_error=True)
+
+async def get_api_key(api_key: str = Security(api_key_header)):
+    """Dependency function to validate the API key."""
+    if api_key == API_KEY:
+        return api_key
+    else:
+        raise HTTPException(
+            status_code=403,
+            detail="Could not validate credentials",
+        )
+
+# 2. LOAD ARTIFACTS
 MODEL_DIR = "../model"
 DATA_DIR = "../data"
 
 MODEL_PATH = os.path.join(MODEL_DIR, "model.pkl")
+KMEANS_PATH = os.path.join(MODEL_DIR, "kmeans_location_model.pkl")
 FEATURES_PATH = os.path.join(MODEL_DIR, "model_features.json")
 DEMOGRAPHICS_PATH = os.path.join(DATA_DIR, "zipcode_demographics.csv")
 
-# Load the artifacts at startup to avoid reloading them on every request
 try:
     model = joblib.load(MODEL_PATH)
+    kmeans_model = joblib.load(KMEANS_PATH)
     with open(FEATURES_PATH, 'r') as f:
         model_features = json.load(f)
-    
-    # Load demographics data for backend joining
     zipcode_demographics = pd.read_csv(DEMOGRAPHICS_PATH, dtype={'zipcode': int}).set_index('zipcode')
 except FileNotFoundError as e:
-    raise RuntimeError(f"Could not load necessary artifacts. Make sure paths are correct. Error: {e}")
+    raise RuntimeError(f"Could not load necessary artifacts. Error: {e}")
 
-# --- 3. DEFINE INPUT DATA MODEL ---
-# Pydantic model for input validation.
-# These fields should match the columns in 'future_unseen_examples.csv'
+
+# 3. DEFINE INPUT DATA MODEL
 class HouseFeatures(BaseModel):
-    bedrooms: int = Field(..., example=3, description="Number of bedrooms")
-    bathrooms: float = Field(..., example=2.25, description="Number of bathrooms")
-    sqft_living: int = Field(..., example=2570, description="Square footage of the living space")
-    sqft_lot: int = Field(..., example=7242, description="Square footage of the lot")
-    floors: float = Field(..., example=2.0, description="Number of floors")
-    waterfront: int = Field(..., example=0, description="Whether the property has a waterfront (0 or 1)")
-    view: int = Field(..., example=0, description="Quality of the view (0-4)")
-    condition: int = Field(..., example=3, description="Condition of the house (1-5)")
-    grade: int = Field(..., example=7, description="Construction grade (1-13)")
-    sqft_above: int = Field(..., example=2170, description="Square footage above ground")
-    sqft_basement: int = Field(..., example=400, description="Square footage of the basement")
-    yr_built: int = Field(..., example=1951, description="Year built")
-    yr_renovated: int = Field(..., example=1991, description="Year renovated (0 if never)")
-    zipcode: int = Field(..., example=98125, description="Zip code of the property")
-    lat: float = Field(..., example=47.7210, description="Latitude")
-    long: float = Field(..., example=-122.319, description="Longitude")
-    sqft_living15: int = Field(..., example=1690, description="Average living space of 15 nearest neighbors")
-    sqft_lot15: int = Field(..., example=7639, description="Average lot size of 15 nearest neighbors")
-    
-# --- 4. API ENDPOINTS ---
+    bedrooms: int = Field(..., example=3)
+    bathrooms: float = Field(..., example=2.25)
+    sqft_living: int = Field(..., example=2570)
+    sqft_lot: int = Field(..., example=7242)
+    floors: float = Field(..., example=2.0)
+    waterfront: int = Field(..., example=0)
+    view: int = Field(..., example=0)
+    condition: int = Field(..., example=3)
+    grade: int = Field(..., example=7)
+    sqft_above: int = Field(..., example=2170)
+    sqft_basement: int = Field(..., example=400)
+    yr_built: int = Field(..., example=1951)
+    yr_renovated: int = Field(..., example=1991)
+    zipcode: int = Field(..., example=98125)
+    lat: float = Field(..., example=47.7210)
+    long: float = Field(..., example=-122.319)
+    sqft_living15: int = Field(..., example=1690)
+    sqft_lot15: int = Field(..., example=7639)
+
+
+def engineer_features(df: pd.DataFrame, kmeans: KMeans) -> pd.DataFrame:
+    """Apply all feature engineering steps to the raw dataset."""
+    df_eng = df.copy()
+    now = datetime.now()
+    formatted_time = now.strftime("%Y%m%dT%H%M%S")
+    df_eng['date'] = pd.to_datetime(formatted_time)
+    df_eng['year_sold'] = df_eng['date'].dt.year
+    df_eng['month_sold'] = df_eng['date'].dt.month
+    df_eng['house_age'] = df_eng['year_sold'] - df_eng['yr_built']
+    df_eng['was_renovated'] = (df_eng['yr_renovated'] > 0).astype(int)
+    df_eng['has_basement'] = (df_eng['sqft_basement'] > 0).astype(int)
+    df_eng['location_cluster'] = kmeans.predict(df[['lat', 'long']])
+    cols_to_drop = ['date', 'yr_built', 'yr_renovated', 'lat', 'long']
+    df_eng = df_eng.drop(columns=cols_to_drop)
+    return df_eng
+
+
+# 4. API ENDPOINTS
 @app.get("/", summary="Health Check")
 def read_root():
-    """
-    Root endpoint for health checking.
-    Returns a welcome message if the API is running.
-    """
+    """Root endpoint for health checking."""
     return {"message": "Welcome to the phData Real Estate Prediction API"}
 
 @app.post("/predict", summary="Predict House Price")
-def predict_price(features: HouseFeatures):
+def predict_price(
+    features: HouseFeatures,
+    api_key: str = Depends(get_api_key) # Authentication
+):
     """
     Receives house features, joins demographic data, and returns a price prediction.
-
-    - **Input**: JSON object with house features.
-    - **Output**: JSON object with the model's price prediction.
+    Requires a valid API key in the 'X-API-Key' header.
     """
-    # Convert input data to a pandas DataFrame
     input_df = pd.DataFrame([features.dict()])
+    eng_df = engineer_features(input_df, kmeans_model)
     
-    # --- Backend Data Joining ---
-    # Check if the zipcode from the input exists in our demographics data
     if features.zipcode not in zipcode_demographics.index:
         raise HTTPException(
             status_code=404, 
             detail=f"Demographic data not found for zipcode {features.zipcode}"
         )
         
-    # Join the demographic data based on zipcode
-    full_df = input_df.merge(
+    full_df = eng_df.merge(
         zipcode_demographics, 
         how="left", 
         left_on="zipcode", 
         right_index=True
-    )
+    ).drop(columns=['zipcode'])
 
-    # --- Prediction ---
-    # Ensure columns are in the same order as during model training
     try:
         prediction_features = full_df[model_features]
     except KeyError as e:
         raise HTTPException(
             status_code=400, 
-            detail=f"An expected feature is missing from the input or joined data: {e}"
+            detail=f"An expected feature is missing: {e}"
         )
 
-    # Make the prediction
-    prediction = model.predict(prediction_features)
+    log_prediction = model.predict(prediction_features)
+    actual_price = np.expm1(log_prediction[0])
 
-    # Return the result
     return {
-        "predicted_price": round(prediction[0], 2),
+        "predicted_price": round(float(actual_price), 2),
         "model_version": "1.0-baseline"
     }
-
-# To run this API:
-# 1. Make sure you have fastapi and uvicorn installed: pip install fastapi "uvicorn[standard]"
-# 2. Navigate to the 'api' directory in your terminal.
-# 3. Run the command: uvicorn main:app --reload
-
